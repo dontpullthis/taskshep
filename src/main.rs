@@ -1,6 +1,7 @@
 use std::env;
+use std::fs;
 use std::io::{Error, ErrorKind};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use dirs;
 
@@ -25,10 +26,30 @@ fn get_home_dir() -> Result<String, Error> {
     }
 }
 
-fn main() -> Result<(), Error> {
-    println!("Hello, world!");
+struct Config {
+    dir_home: String,
+    dir_tasks: String,
+}
 
-    let app_home = get_home_dir()?;
-    println!("TEST: {}", app_home);
+impl Config {
+    fn new() -> Result<Config, Error> {
+        let dir_home = get_home_dir()?;
+        Ok(Config {
+            dir_home: dir_home.clone(),
+            dir_tasks: Path::new(dir_home.clone().as_str()).join("tasks").display().to_string(),
+        })
+    }
+}
+
+fn main() -> Result<(), Error> {
+    let config = Config::new()?;
+    for entry in fs::read_dir(config.dir_tasks)? {
+        let entry = entry?;
+        let path = entry.path().display().to_string();
+        if entry.path().is_dir() || !path.ends_with(".yaml") {
+            continue;
+        }
+        println!("Scanning file {}", &path);
+    }
     Ok(())
 }
