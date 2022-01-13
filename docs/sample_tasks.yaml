@@ -1,0 +1,15 @@
+- name: Echo Test
+  id: echo_test
+  schedule:
+  - seconds:
+    - min_value: 1
+      max_value: 30
+      step: 2
+    - value: 35
+  commmand: "echo \"test\""
+
+- name: Echo Test 2
+  id: echo_test2
+  run_after:
+    task: echo_test
+  commmand: "echo \"test 2\""
