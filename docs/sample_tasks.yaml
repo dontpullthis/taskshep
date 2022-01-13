@@ -6,10 +6,10 @@
       max_value: 30
       step: 2
     - value: 35
-  commmand: "echo \"test\""
+  command: "echo \"test\""
 
 - name: Echo Test 2
   id: echo_test2
   run_after:
     task: echo_test
-  commmand: "echo \"test 2\""
+  command: "echo \"test 2\""

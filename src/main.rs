@@ -5,6 +5,8 @@ use std::path::Path;
 
 use env_logger;
 use log;
+use serde::{Serialize, Deserialize};
+use serde_yaml;
 
 use dirs;
 
@@ -42,6 +44,39 @@ impl Config {
     }
 }
 
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct ScheduleRuleInterval {
+    min_value: Option<u16>,
+    max_value: Option<u16>,
+    value: Option<u16>,
+    step: Option<u16>,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct ScheduleRule {
+    days_of_month: Option<Vec<ScheduleRuleInterval>>,
+    days_of_week: Option<Vec<ScheduleRuleInterval>>,
+    hours: Option<Vec<ScheduleRuleInterval>>,
+    months: Option<Vec<ScheduleRuleInterval>>,
+    minutes: Option<Vec<ScheduleRuleInterval>>,
+    seconds: Option<Vec<ScheduleRuleInterval>>,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct RunAfter {
+    task: String,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct Task {
+    id: String,
+    name: Option<String>,
+    test: Option<String>,
+    command: String,
+    run_after: Option<RunAfter>,
+    schedule: Option<Vec<ScheduleRule>>,
+}
+
 fn main() -> Result<(), Error> {
     env_logger::builder().parse_env("LOG_LEVEL").init();
     let config = Config::new()?;
@@ -51,7 +86,13 @@ fn main() -> Result<(), Error> {
         if entry.path().is_dir() || !path.ends_with(".yaml") {
             continue;
         }
-        log::debug!("Scanning file {}", &path);
+
+        log::debug!("Scanning file {}...", &path);
+        let contents = fs::read_to_string(&path)?;
+        let _tasks: Vec<Task> = match serde_yaml::from_str(&contents) {
+            Ok(t) => Ok(t),
+            Err(_) => Err(Error::new(ErrorKind::Other, format!("Failed to parse the YAML file \"{}\"", &path))), // TODO: format a proper YAML error message
+        }?;
     }
     Ok(())
 }
