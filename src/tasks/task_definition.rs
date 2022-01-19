@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 struct ScheduleRuleInterval {
     min_value: Option<u16>,
     max_value: Option<u16>,
@@ -8,7 +8,7 @@ struct ScheduleRuleInterval {
     step: Option<u16>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 struct ScheduleRule {
     days_of_month: Option<Vec<ScheduleRuleInterval>>,
     days_of_week: Option<Vec<ScheduleRuleInterval>>,
@@ -18,13 +18,13 @@ struct ScheduleRule {
     seconds: Option<Vec<ScheduleRuleInterval>>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 struct RunAfter {
     task: String,
 }
 
 /// Task definition: command to run, schedule or reference to upstream task
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct TaskDefinition {
     id: String,
     name: Option<String>,

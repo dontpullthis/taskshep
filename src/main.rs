@@ -2,19 +2,20 @@ mod config;
 mod tasks;
 
 use std::fs;
-use std::io::{Error, ErrorKind};
+use std::io::Error;
 
 use env_logger;
 use log;
 use serde_yaml;
 
 use crate::config::Config;
-use crate::tasks::task_definition::TaskDefinition;
-
+use crate::tasks::manager::Manager;
 
 fn main() -> Result<(), Error> {
     env_logger::builder().parse_env("LOG_LEVEL").init();
+    log::info!("Starting...");
     let config = Config::new()?;
+    let mut task_manager = Manager::new();
     for entry in fs::read_dir(config.dir_tasks)? {
         let entry = entry?;
         let path = entry.path().display().to_string();
@@ -24,10 +25,16 @@ fn main() -> Result<(), Error> {
 
         log::debug!("Scanning file {}...", &path);
         let contents = fs::read_to_string(&path)?;
-        let _tasks: Vec<TaskDefinition> = match serde_yaml::from_str(&contents) {
-            Ok(t) => Ok(t),
-            Err(_) => Err(Error::new(ErrorKind::Other, format!("Failed to parse the YAML file \"{}\"", &path))), // TODO: format a proper YAML error message
-        }?;
+        let tasks = match serde_yaml::from_str(&contents) {
+            Ok(t) => t,
+            Err(e) => {
+                log::error!("Failed to parse the YAML file \"{}\": {}", &path, e);
+                continue
+            }  
+        };
+
+        task_manager.merge_definitions(tasks);
     }
+    log::info!("Application terminated.");
     Ok(())
 }
