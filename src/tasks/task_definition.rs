@@ -26,7 +26,7 @@ struct RunAfter {
 /// Task definition: command to run, schedule or reference to upstream task
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub struct TaskDefinition {
-    id: String,
+    pub id: String,
     name: Option<String>,
     test: Option<String>,
     command: String,

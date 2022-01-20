@@ -33,7 +33,7 @@ fn main() -> Result<(), Error> {
             }  
         };
 
-        task_manager.merge_definitions(tasks);
+        task_manager.merge_definitions(&tasks);
     }
     log::info!("Application terminated.");
     Ok(())
