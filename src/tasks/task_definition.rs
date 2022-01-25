@@ -9,7 +9,7 @@ struct ScheduleRuleInterval {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
-struct ScheduleRule {
+pub struct ScheduleRule {
     days_of_month: Option<Vec<ScheduleRuleInterval>>,
     days_of_week: Option<Vec<ScheduleRuleInterval>>,
     hours: Option<Vec<ScheduleRuleInterval>>,
@@ -31,5 +31,5 @@ pub struct TaskDefinition {
     test: Option<String>,
     command: String,
     run_after: Option<RunAfter>,
-    schedule: Option<Vec<ScheduleRule>>,
+    pub schedule: Option<Vec<ScheduleRule>>,
 }
