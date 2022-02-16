@@ -8,7 +8,7 @@ use std::io::Error;
 use std::process::Command;
 use std::thread;
 
-use crate::scheduler::types::ScheduleItem;
+use crate::scheduler::types::{TaskSchedule, ScheduleItem};
 use crate::tasks::task_definition::TaskDefinition;
 
 use chrono::Duration;
@@ -19,7 +19,7 @@ use shlex;
 use crate::config::Config;
 use crate::tasks::manager::refresh_definitions;
 
-fn flatten_schedule(schedule: HashMap<String, VecDeque<ScheduleItem>>) -> VecDeque<ScheduleItem> {
+fn flatten_schedule(schedule: HashMap<String, TaskSchedule>) -> TaskSchedule {
     let mut result: VecDeque<ScheduleItem> = VecDeque::new();
     for (_, mut schedule_item) in schedule {
         result.append(&mut schedule_item);
@@ -41,8 +41,7 @@ fn main() -> Result<(), Error> {
     // Definitions might be refreshed with some interval in thread
     refresh_definitions(&config, &mut definitions)?;
 
-    let mut schedule: HashMap<String, VecDeque<ScheduleItem>> = HashMap::new();
-    scheduler::refresh_schedule(&mut schedule, &definitions)?;
+    let schedule = scheduler::generate_schedule(&definitions)?;
 
     let mut schedule = flatten_schedule(schedule);
 
