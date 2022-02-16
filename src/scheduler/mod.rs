@@ -62,14 +62,7 @@ pub fn generate_schedule(definitions: &HashMap<String, TaskDefinition>) -> Resul
             None => continue,
         };
 
-        if !schedule.contains_key(&task_id.clone()) {
-            schedule.insert(task_id.clone(), VecDeque::new());
-        }
-        let mut task_schedule = schedule.get_mut(task_id).unwrap();
-        // TODO: just a new instance
-        // let task_schedule = 
-
-
+        let mut task_schedule = VecDeque::new();
         for (i, task_rule) in task_rules.iter().enumerate() {
             process_task_rule(i, task_rule, TaskContext{
                 schedule: &mut task_schedule,
@@ -78,6 +71,7 @@ pub fn generate_schedule(definitions: &HashMap<String, TaskDefinition>) -> Resul
                 time_start: time_start,
             });
         }
+        schedule.insert(task_id.clone(), task_schedule);
     }
     Ok(schedule)
 }
