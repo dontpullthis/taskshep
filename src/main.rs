@@ -77,12 +77,12 @@ fn main() -> Result<(), Error> {
                 continue;
             }
         };
-        match Command::new(cmd).args(args).spawn() {
-            Ok(_c) => {},
-            Err(e) => {
-                log::warn!("Process failed: {}\nOutput:\n{}", &task_def.command, e);
-            }
-        }
+        let mut process = Command::new(cmd)
+            .args(args)
+            .spawn()
+            .expect(format!("Failed to start a process: {}", &task_def.command).as_str()); // TODO: more detailed error message
+        process.wait().expect(format!("Failed to wait for process: {}", &task_def.command).as_str()); // TODO: more detailed error message
+
     }
 
     log::info!("Application terminated.");
