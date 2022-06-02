@@ -19,17 +19,7 @@ use shlex;
 use crate::config::Config;
 use crate::tasks::manager::refresh_definitions;
 
-fn flatten_schedule(schedule: HashMap<String, TaskSchedule>) -> TaskSchedule {
-    let mut result: VecDeque<ScheduleItem> = VecDeque::new();
-    for (_, mut schedule_item) in schedule {
-        result.append(&mut schedule_item);
-    }
 
-    let mut result = result.into_iter().collect::<Vec<ScheduleItem>>();
-    result.sort_by(|a, b| b.time.partial_cmp(&a.time).unwrap());
-
-    VecDeque::from(result)
-}
 
 fn main() -> Result<(), Error> {
     env_logger::builder().parse_env("LOG_LEVEL").init();
@@ -42,11 +32,10 @@ fn main() -> Result<(), Error> {
     refresh_definitions(&config, &mut definitions)?;
 
     let schedule = scheduler::generate_schedule(&definitions)?;
-
-    let mut schedule = flatten_schedule(schedule);
+    let mut schedule_items = schedule.flatten_items();
 
     loop {
-        let scheduled_task = match schedule.pop_back() {
+        let scheduled_task = match schedule_items.pop_front() {
             Some(t) => t,
             None => break,
         };
@@ -77,12 +66,22 @@ fn main() -> Result<(), Error> {
                 continue;
             }
         };
-        let mut process = Command::new(cmd)
-            .args(args)
-            .spawn()
-            .expect(format!("Failed to start a process: {}", &task_def.command).as_str()); // TODO: more detailed error message
-        process.wait().expect(format!("Failed to wait for process: {}", &task_def.command).as_str()); // TODO: more detailed error message
-
+        match Command::new(cmd).args(args).spawn() {
+            Ok(_c) => {
+                log::debug!("Task \"{}\" is finished.", &task_def.id);
+                match schedule.dependencies.get(&task_def.id) {
+                    Some(deps) => {
+                        for dep in deps {
+                            schedule_items.push_front(ScheduleItem::new(dep.clone(), chrono::Local::now().timestamp()));
+                        }
+                    },
+                    None => {},
+                };
+            },
+            Err(e) => {
+                log::warn!("Process failed: {}\nOutput:\n{}", &task_def.command, e);
+            }
+        }
     }
 
     log::info!("Application terminated.");

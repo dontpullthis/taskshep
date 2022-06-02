@@ -5,7 +5,7 @@ use std::collections::VecDeque;
 use std::io::Error;
 
 use crate::tasks::task_definition::{ScheduleRule, TaskDefinition};
-use crate::scheduler::types::{ScheduleItem, ScheduleInterval, TaskSchedule};
+use crate::scheduler::types::{Schedule, ScheduleItem, ScheduleInterval, TaskSchedule};
 
 use chrono::Duration;
 use log;
@@ -52,17 +52,23 @@ fn process_task_rule(rule_index: usize, rule: &ScheduleRule, context: TaskContex
     }
 }
 
-pub fn generate_schedule(definitions: &HashMap<String, TaskDefinition>) -> Result<HashMap<String, VecDeque<ScheduleItem>>, Error> {
-    let mut schedule: HashMap<String, TaskSchedule> = HashMap::new();
+pub fn generate_schedule(definitions: &HashMap<String, TaskDefinition>) -> Result<Schedule, Error> {
+    let mut schedule = Schedule::new();
     let time_start = chrono::Local::now();
     let time_end = time_start + Duration::minutes(10);
     for (task_id, task_def) in definitions {
+        match &task_def.run_after {
+            Some(r) => {
+                schedule.add_dependency(&r.task, task_id);
+            },
+            None => {},
+        };
+
+        let mut task_schedule = VecDeque::new();
         let task_rules = match &task_def.schedule {
             Some(sr) => sr,
             None => continue,
         };
-
-        let mut task_schedule = VecDeque::new();
         for (i, task_rule) in task_rules.iter().enumerate() {
             process_task_rule(i, task_rule, TaskContext{
                 schedule: &mut task_schedule,
@@ -71,7 +77,7 @@ pub fn generate_schedule(definitions: &HashMap<String, TaskDefinition>) -> Resul
                 time_start: time_start,
             });
         }
-        schedule.insert(task_id.clone(), task_schedule);
+        schedule.items.insert(task_id.clone(), task_schedule);
     }
     Ok(schedule)
 }
