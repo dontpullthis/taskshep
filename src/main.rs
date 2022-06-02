@@ -66,21 +66,21 @@ fn main() -> Result<(), Error> {
                 continue;
             }
         };
-        match Command::new(cmd).args(args).spawn() {
-            Ok(_c) => {
-                log::debug!("Task \"{}\" is finished.", &task_def.id);
-                match schedule.dependencies.get(&task_def.id) {
-                    Some(deps) => {
-                        for dep in deps {
-                            schedule_items.push_front(ScheduleItem::new(dep.clone(), chrono::Local::now().timestamp()));
-                        }
-                    },
-                    None => {},
-                };
+
+        let mut process = Command::new(cmd)
+            .args(args)
+            .spawn()
+            .expect(format!("Failed to start a process: {}", &task_def.command).as_str()); // TODO: more detailed error message
+        process.wait().expect(format!("Failed to wait for process: {}", &task_def.command).as_str()); // TODO: more detailed error message
+        log::debug!("Task \"{}\" is finished.", &task_def.id);
+
+        match schedule.dependencies.get(&task_def.id) {
+            Some(deps) => {
+                for dep in deps {
+                    schedule_items.push_front(ScheduleItem::new(dep.clone(), chrono::Local::now().timestamp()));
+                }
             },
-            Err(e) => {
-                log::warn!("Process failed: {}\nOutput:\n{}", &task_def.command, e);
-            }
+            None => {},
         }
     }
 

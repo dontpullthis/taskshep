@@ -6,10 +6,10 @@
       max_value: 30
       step: 2
     - value: 35
-  command: "echo \"test\""
+  command: "bash -c 'echo \"test\" && sleep 1'"
 
 - name: Echo Test 2
   id: echo_test2
   run_after:
     task: echo_test
-  command: "echo \"test 2\""
+  command: "bash -c 'echo \"test 2\" && sleep 1'"
