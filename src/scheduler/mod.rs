@@ -4,11 +4,14 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::io::Error;
 
+use chrono::Duration;
+use chrono::Timelike;
+use log;
+
 use crate::tasks::task_definition::{ScheduleRule, TaskDefinition};
 use crate::scheduler::types::{Schedule, ScheduleItem, ScheduleInterval, TaskSchedule};
 
-use chrono::Duration;
-use log;
+
 
 struct TaskContext<'a> {
     task_def: &'a TaskDefinition,
@@ -38,18 +41,41 @@ fn process_task_rule(rule_index: usize, rule: &ScheduleRule, context: TaskContex
         least_interval = Some(ScheduleInterval::Months);
     }
     
+
     if least_interval.is_none() {
         log::warn!("Interval is not defined in rule #{}, task \"{}\"", rule_index, context.task_def.id);
         return;
     }
 
     // TODO: implement scheduling
+    match least_interval {
+        Some(ScheduleInterval::Seconds) => {
+            let seconds = rule.seconds.as_ref().unwrap();
+            for interval in seconds {
+                if interval.value.is_some() {
+                    let exact_value = interval.value.unwrap();
+                    println!("An exact value is found: {}", exact_value);
+                    let mut time = context.time_start;
+                    println!("current time: {}", time.format("%Y-%m-%d %H:%M:%S").to_string());
+                    if u32::from(exact_value) >= time.second() { // Seconds not passed yet
+                        time = time + Duration::seconds(i64::from(u32::from(exact_value) - time.second()));
+                    } else { // If seconds are already passed, schedule for the next minute
+                        time = time + Duration::minutes(1) - Duration::seconds(i64::from(time.second() - u32::from(exact_value)));
+                    }
+                    println!("Scheduled time: {}", time.format("%Y-%m-%d %H:%M:%S").to_string());
+                    context.schedule.push_back(ScheduleItem::new(context.task_def.id.clone(), time.timestamp()));
+                }
+            }
+        },
+        _ => {},
+    };
 
-    let mut time = context.time_start;
-    while time < context.time_end {
-        time = time + Duration::seconds(3); // TODO: implement calculation of time
-        context.schedule.push_back(ScheduleItem::new(context.task_def.id.clone(), time.timestamp()));
-    }
+
+    // let mut time = context.time_start;
+    // while time < context.time_end {
+    //     time = time + Duration::seconds(3); // TODO: implement calculation of time
+    //     context.schedule.push_back(ScheduleItem::new(context.task_def.id.clone(), time.timestamp()));
+    // }
 }
 
 pub fn generate_schedule(definitions: &HashMap<String, TaskDefinition>) -> Result<Schedule, Error> {
